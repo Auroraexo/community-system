@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动化用户管理测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #0b7dda;
+        }
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        .output {
+            background-color: #f0f7ff;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-success {
+            color: #28a745;
+        }
+        .log-error {
+            color: #dc3545;
+        }
+        .log-info {
+            color: #17a2b8;
+        }
+        .auth-status {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status-authenticated {
+            color: #28a745;
+        }
+        .status-unauthenticated {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>自动化用户管理功能测试</h1>
+        
+        <div class="auth-status" id="auth-status">
+            <span class="status-unauthenticated">认证状态: 未登录</span>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" onclick="runFullTest()">运行完整测试</button>
+            <button class="btn btn-secondary" onclick="testLogin()">仅测试登录</button>
+            <button class="btn btn-secondary" onclick="testUserList()">仅测试用户列表</button>
+            <button class="btn btn-secondary" onclick="testCreateUser()">仅测试创建用户</button>
+            <button class="btn btn-danger" onclick="clearOutput()">清空输出</button>
+        </div>
+        
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        // 重定向console.log到页面
+        const outputDiv = document.getElementById('output');
+        
+        // 保存原始console方法
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalInfo = console.info;
+        
+        // 重写console.log
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            appendToOutput(args.join(' '), 'info');
+        };
+        
+        // 重写console.error
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            appendToOutput(args.join(' '), 'error');
+        };
+        
+        // 重写console.info
+        console.info = function(...args) {
+            originalInfo.apply(console, args);
+            appendToOutput(args.join(' '), 'info');
+        };
+        
+        // 添加输出到页面
+        function appendToOutput(text, type = 'info') {
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-${type}`;
+            logDiv.textContent = text;
+            outputDiv.appendChild(logDiv);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+        
+        // 清空输出
+        function clearOutput() {
+            outputDiv.innerHTML = '';
+        }
+        
+        // 加载测试脚本
+        function loadTestScript() {
+            const script = document.createElement('script');
+            script.src = 'auto-test.js';
+            script.onload = function() {
+                appendToOutput('测试脚本已加载，准备就绪');
+            };
+            script.onerror = function() {
+                appendToOutput('加载测试脚本失败', 'error');
+            };
+            document.body.appendChild(script);
+        }
+        
+        // 测试函数
+        function runFullTest() {
+            if (window.userManagementTest && window.userManagementTest.runFullTest) {
+                appendToOutput('开始运行完整测试流程...');
+                window.userManagementTest.runFullTest();
+            } else {
+                appendToOutput('测试脚本未完全加载', 'error');
+            }
+        }
+        
+        function testLogin() {
+            if (window.userManagementTest && window.userManagementTest.testLogin) {
+                appendToOutput('开始测试登录...');
+                window.userManagementTest.testLogin().then(success => {
+                    updateAuthStatus(success);
+                });
+            } else {
+                appendToOutput('测试脚本未完全加载', 'error');
+            }
+        }
+        
+        function testUserList() {
+            if (window.userManagementTest && window.userManagementTest.testUserList) {
+                appendToOutput('开始测试用户列表...');
+                window.userManagementTest.testUserList();
+            } else {
+                appendToOutput('测试脚本未完全加载', 'error');
+            }
+        }
+        
+        function testCreateUser() {
+            if (window.userManagementTest && window.userManagementTest.testCreateUser) {
+                appendToOutput('开始测试创建用户...');
+                window.userManagementTest.testCreateUser();
+            } else {
+                appendToOutput('测试脚本未完全加载', 'error');
+            }
+        }
+        
+        // 更新认证状态显示
+        function updateAuthStatus(isAuthenticated) {
+            const authStatus = document.getElementById('auth-status').querySelector('span');
+            if (isAuthenticated) {
+                authStatus.className = 'status-authenticated';
+                authStatus.textContent = '认证状态: 已登录';
+            } else {
+                authStatus.className = 'status-unauthenticated';
+                authStatus.textContent = '认证状态: 未登录';
+            }
+        }
+        
+        // 页面加载时执行
+        window.onload = function() {
+            appendToOutput('页面已加载，正在初始化测试环境...');
+            loadTestScript();
+            
+            // 检查localStorage中的认证状态
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                appendToOutput('检测到已有认证Token');
+                updateAuthStatus(true);
+            }
+        };
+    </script>
+</body>
+</html>

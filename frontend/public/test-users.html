@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        button {
+            padding: 8px 16px;
+            background: #409eff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 80px;
+        }
+        input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>用户管理功能测试</h1>
+    
+    <div class="container">
+        <h2>1. 登录测试</h2>
+        <div class="input-group">
+            <label>用户名:</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        <div class="input-group">
+            <label>密码:</label>
+            <input type="password" id="password" value="admin123">
+        </div>
+        <button onclick="testLogin()">测试登录</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="container">
+        <h2>2. 获取用户列表测试</h2>
+        <button onclick="testGetUsers()">获取用户列表</button>
+        <div id="usersResult"></div>
+    </div>
+    
+    <div class="container">
+        <h2>3. 添加用户测试</h2>
+        <button onclick="testAddUser()">添加测试用户</button>
+        <div id="addUserResult"></div>
+    </div>
+    
+    <div class="container">
+        <h2>4. 更新用户测试</h2>
+        <button onclick="testUpdateUser()">更新测试用户</button>
+        <div id="updateUserResult"></div>
+    </div>
+    
+    <div class="container">
+        <h2>5. 删除用户测试</h2>
+        <button onclick="testDeleteUser()">删除测试用户</button>
+        <div id="deleteUserResult"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let testUserId = null;
+        
+        // 显示结果
+        function showResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+        
+        // 显示JSON结果
+        function showJsonResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        // 测试登录
+        async function testLogin() {
+            try {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.access_token) {
+                    authToken = data.access_token;
+                    showResult('loginResult', '登录成功！Token已获取');
+                    showJsonResult('loginResult', data);
+                } else {
+                    showResult('loginResult', `登录失败: ${data.detail || '未知错误'}`, true);
+                }
+            } catch (error) {
+                showResult('loginResult', `登录出错: ${error.message}`, true);
+            }
+        }
+        
+        // 测试获取用户列表
+        async function testGetUsers() {
+            if (!authToken) {
+                showResult('usersResult', '请先登录', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('usersResult', `获取用户列表成功，共 ${data.total || data.items?.length || 0} 个用户`);
+                    showJsonResult('usersResult', data);
+                } else {
+                    showResult('usersResult', `获取用户列表失败: ${data.detail || '未知错误'}`, true);
+                }
+            } catch (error) {
+                showResult('usersResult', `获取用户列表出错: ${error.message}`, true);
+            }
+        }
+        
+        // 测试添加用户
+        async function testAddUser() {
+            if (!authToken) {
+                showResult('addUserResult', '请先登录', true);
+                return;
+            }
+            
+            const timestamp = Date.now();
+            const username = `test_user_${timestamp}`;
+            
+            try {
+                const response = await fetch('/api/users/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: 'test123456',
+                        email: `${username}@example.com`,
+                        phone: '13800138000',
+                        name: `测试用户_${timestamp}`,
+                        role_name: '住户'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    testUserId = data.id;
+                    showResult('addUserResult', `添加用户成功，用户ID: ${data.id}`);
+                    showJsonResult('addUserResult', data);
+                } else {
+                    showResult('addUserResult', `添加用户失败: ${data.detail || '未知错误'}`, true);
+                }
+            } catch (error) {
+                showResult('addUserResult', `添加用户出错: ${error.message}`, true);
+            }
+        }
+        
+        // 测试更新用户
+        async function testUpdateUser() {
+            if (!authToken) {
+                showResult('updateUserResult', '请先登录', true);
+                return;
+            }
+            
+            if (!testUserId) {
+                showResult('updateUserResult', '请先添加测试用户', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/users/${testUserId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name: '更新后的测试用户',
+                        phone: '13900139000'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('updateUserResult', `更新用户成功`);
+                    showJsonResult('updateUserResult', data);
+                } else {
+                    showResult('updateUserResult', `更新用户失败: ${data.detail || '未知错误'}`, true);
+                }
+            } catch (error) {
+                showResult('updateUserResult', `更新用户出错: ${error.message}`, true);
+            }
+        }
+        
+        // 测试删除用户
+        async function testDeleteUser() {
+            if (!authToken) {
+                showResult('deleteUserResult', '请先登录', true);
+                return;
+            }
+            
+            if (!testUserId) {
+                showResult('deleteUserResult', '请先添加测试用户', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/users/${testUserId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showResult('deleteUserResult', '删除用户成功');
+                    testUserId = null;
+                } else {
+                    const data = await response.json();
+                    showResult('deleteUserResult', `删除用户失败: ${data.detail || '未知错误'}`, true);
+                }
+            } catch (error) {
+                showResult('deleteUserResult', `删除用户出错: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

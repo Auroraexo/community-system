@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API调用测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .run-all {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .run-all:hover {
+            background-color: #45a049;
+        }
+        .clear {
+            background-color: #f44336;
+            color: white;
+        }
+        .clear:hover {
+            background-color: #d32f2f;
+        }
+        #output {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>前端API调用测试</h1>
+        
+        <div class="button-container">
+            <button class="run-all" onclick="runAllTests()">运行所有测试</button>
+            <button class="clear" onclick="clearOutput()">清空输出</button>
+        </div>
+        
+        <div id="output"></div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // 重写console方法，将输出显示在页面上
+        const outputElement = document.getElementById('output');
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn
+        };
+
+        function addToOutput(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            logEntry.textContent = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            
+            outputElement.appendChild(logEntry);
+            outputElement.scrollTop = outputElement.scrollHeight;
+            
+            // 调用原始console方法
+            originalConsole[type](...args);
+        }
+
+        console.log = (...args) => addToOutput('log', ...args);
+        console.error = (...args) => addToOutput('error', ...args);
+        console.warn = (...args) => addToOutput('warn', ...args);
+
+        function clearOutput() {
+            outputElement.innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // 测试1: 检查前端应用是否正确配置了API基础URL
+        function testApiBaseUrl() {
+            console.log('\n=== 测试API基础URL配置 ===');
+            
+            // 检查Vite代理配置
+            const apiBaseUrl = '/api';
+            console.log('API基础URL:', apiBaseUrl);
+            
+            // 测试API可访问性
+            return fetch(`${apiBaseUrl}/health`, {
+                method: 'GET'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ API基础URL配置正确');
+                    return true;
+                } else {
+                    console.log('⚠️ API基础URL可访问，但健康检查失败');
+                    return false;
+                }
+            })
+            .catch(error => {
+                console.error('❌ API基础URL不可访问:', error.message);
+                return false;
+            });
+        }
+
+        // 测试2: 检查认证状态
+        function testAuthStatus() {
+            console.log('\n=== 测试认证状态 ===');
+            
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            
+            console.log('Token存在:', !!token);
+            console.log('用户信息存在:', !!userStr);
+            
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    console.log('用户名:', user.username);
+                    console.log('用户角色:', user.roles);
+                    return { token, user };
+                } catch (e) {
+                    console.error('解析用户信息失败:', e);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // 测试3: 测试登录API
+        async function testLoginApi() {
+            console.log('\n=== 测试登录API ===');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.access_token) {
+                    console.log('✅ 登录API调用成功');
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    return data.access_token;
+                } else {
+                    console.error('❌ 登录API调用失败:', data.detail || '未知错误');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ 登录API调用出错:', error.message);
+                return null;
+            }
+        }
+
+        // 测试4: 测试获取用户列表API
+        async function testGetUsersApi(token) {
+            console.log('\n=== 测试获取用户列表API ===');
+            
+            try {
+                const response = await fetch('/api/users/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('✅ 获取用户列表API调用成功');
+                    console.log('用户数量:', data.total || data.items?.length || 0);
+                    return data;
+                } else {
+                    console.error('❌ 获取用户列表API调用失败:', data.detail || '未知错误');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ 获取用户列表API调用出错:', error.message);
+                return null;
+            }
+        }
+
+        // 测试5: 测试添加用户API
+        async function testAddUserApi(token) {
+            console.log('\n=== 测试添加用户API ===');
+            
+            const timestamp = Date.now();
+            const username = `test_user_${timestamp}`;
+            
+            try {
+                const response = await fetch('/api/users/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: 'test123456',
+                        email: `${username}@example.com`,
+                        phone: '13800138000',
+                        name: `测试用户_${timestamp}`,
+                        role_name: '住户'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('✅ 添加用户API调用成功，用户ID:', data.id);
+                    return data.id;
+                } else {
+                    console.error('❌ 添加用户API调用失败:', data.detail || '未知错误');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ 添加用户API调用出错:', error.message);
+                return null;
+            }
+        }
+
+        // 测试6: 测试更新用户API
+        async function testUpdateUserApi(token, userId) {
+            console.log('\n=== 测试更新用户API ===');
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: '更新后的测试用户',
+                        phone: '13900139000'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('✅ 更新用户API调用成功');
+                    return true;
+                } else {
+                    console.error('❌ 更新用户API调用失败:', data.detail || '未知错误');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ 更新用户API调用出错:', error.message);
+                return false;
+            }
+        }
+
+        // 测试7: 测试删除用户API
+        async function testDeleteUserApi(token, userId) {
+            console.log('\n=== 测试删除用户API ===');
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    console.log('✅ 删除用户API调用成功');
+                    return true;
+                } else {
+                    const data = await response.json();
+                    console.error('❌ 删除用户API调用失败:', data.detail || '未知错误');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ 删除用户API调用出错:', error.message);
+                return false;
+            }
+        }
+
+        // 执行所有测试
+        async function runAllTests() {
+            clearOutput();
+            console.log('开始测试前端API调用...');
+            
+            let allTestsPassed = true;
+            
+            // 测试API基础URL配置
+            const apiTest = await testApiBaseUrl();
+            if (!apiTest) allTestsPassed = false;
+            
+            // 测试认证状态
+            let authData = testAuthStatus();
+            let token = authData ? authData.token : null;
+            
+            // 如果没有token，先登录
+            if (!token) {
+                token = await testLoginApi();
+                if (!token) {
+                    console.error('无法获取token，测试终止');
+                    showStatus('测试失败：无法获取认证令牌', 'error');
+                    return;
+                }
+            }
+            
+            // 测试获取用户列表
+            const usersTest = await testGetUsersApi(token);
+            if (!usersTest) allTestsPassed = false;
+            
+            // 测试添加用户
+            const userId = await testAddUserApi(token);
+            if (!userId) allTestsPassed = false;
+            
+            if (userId) {
+                // 测试更新用户
+                const updateTest = await testUpdateUserApi(token, userId);
+                if (!updateTest) allTestsPassed = false;
+                
+                // 测试删除用户
+                const deleteTest = await testDeleteUserApi(token, userId);
+                if (!deleteTest) allTestsPassed = false;
+            }
+            
+            console.log('\n=== 测试完成 ===');
+            
+            if (allTestsPassed) {
+                showStatus('所有测试通过！前端API调用正常工作。', 'success');
+            } else {
+                showStatus('部分测试失败，请检查错误信息。', 'warning');
+            }
+        }
+    </script>
+</body>
+</html>

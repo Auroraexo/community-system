@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 8px 16px;
+            background: #409eff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>前端认证测试</h1>
+    
+    <div class="container">
+        <h2>测试控制台</h2>
+        <p>打开浏览器控制台查看测试结果</p>
+        <button onclick="runTest()">运行测试</button>
+        <button onclick="clearStorage()">清除存储</button>
+    </div>
+    
+    <div class="container">
+        <h2>测试结果</h2>
+        <pre id="output">点击"运行测试"按钮开始测试...</pre>
+    </div>
+
+    <script>
+        let output = document.getElementById('output');
+        
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+        
+        function runTest() {
+            output.textContent = '开始测试...\n\n';
+            
+            // 检查localStorage中是否有token
+            const token = localStorage.getItem('token');
+            log('Token from localStorage: ' + (token ? '存在' : '不存在'));
+            
+            // 检查localStorage中是否有用户信息
+            const userStr = localStorage.getItem('user');
+            log('User info from localStorage: ' + (userStr ? '存在' : '不存在'));
+            
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    log('User info: ' + JSON.stringify(user, null, 2));
+                } catch (e) {
+                    log('解析用户信息失败: ' + e.message);
+                }
+            }
+            
+            // 测试API调用
+            async function testAPI() {
+                if (!token) {
+                    log('没有token，尝试登录...');
+                    
+                    try {
+                        const response = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                username: 'admin',
+                                password: 'admin123'
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            log('登录成功，获取到token: ' + (data.access_token ? '是' : '否'));
+                            
+                            // 保存token到localStorage
+                            localStorage.setItem('token', data.access_token);
+                            localStorage.setItem('user', JSON.stringify(data.user));
+                            
+                            // 测试API调用
+                            await testUsersAPI();
+                        } else {
+                            const errorData = await response.json();
+                            log('登录失败: ' + JSON.stringify(errorData));
+                        }
+                    } catch (error) {
+                        log('登录出错: ' + error.message);
+                    }
+                } else {
+                    await testUsersAPI();
+                }
+            }
+            
+            async function testUsersAPI() {
+                try {
+                    log('\n测试获取用户列表API...');
+                    const response = await fetch('/api/users/', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    
+                    log('API响应状态: ' + response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('API响应数据: ' + JSON.stringify(data, null, 2));
+                        log('用户数量: ' + (data.total || data.items?.length || 0));
+                    } else {
+                        const errorData = await response.json();
+                        log('API错误: ' + JSON.stringify(errorData));
+                    }
+                } catch (error) {
+                    log('API调用出错: ' + error.message);
+                }
+            }
+            
+            testAPI();
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            output.textContent = '存储已清除\n\n';
+            log('Token from localStorage: 不存在');
+            log('User info from localStorage: 不存在');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社区系统API综合测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+        .test-section h2 {
+            color: #4CAF50;
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .test-controls {
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #0b7dda;
+        }
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .result {
+            background-color: #f0f7ff;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .log-success {
+            color: #28a745;
+        }
+        .log-error {
+            color: #dc3545;
+        }
+        .log-info {
+            color: #17a2b8;
+        }
+        .test-case {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .test-case h3 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .auth-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .auth-info .status {
+            font-weight: bold;
+        }
+        .auth-info .status.authenticated {
+            color: #28a745;
+        }
+        .auth-info .status.unauthenticated {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>社区系统API综合测试</h1>
+            <p>测试认证、用户管理和其他核心API功能</p>
+        </div>
+
+        <div class="auth-info">
+            <div>
+                <strong>认证状态:</strong> <span id="auth-status" class="status unauthenticated">未登录</span>
+            </div>
+            <div id="user-info">
+                <span>未登录</span>
+            </div>
+        </div>
+
+        <!-- 认证测试 -->
+        <div class="test-section">
+            <h2>1. 认证功能测试</h2>
+            <div class="form-group">
+                <label for="username">用户名:</label>
+                <input type="text" id="username" value="admin" placeholder="输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" value="admin123" placeholder="输入密码">
+            </div>
+            <div class="test-controls">
+                <button class="btn btn-primary" onclick="testLogin()">测试登录</button>
+                <button class="btn btn-danger" onclick="testLogout()">测试登出</button>
+                <button class="btn btn-secondary" onclick="checkAuthStatus()">检查认证状态</button>
+            </div>
+        </div>
+
+        <!-- 用户管理测试 -->
+        <div class="test-section">
+            <h2>2. 用户管理API测试</h2>
+            <div class="test-case">
+                <h3>获取用户列表</h3>
+                <div class="test-controls">
+                    <button class="btn btn-primary" onclick="testGetUsers()">获取用户列表</button>
+                </div>
+            </div>
+            <div class="test-case">
+                <h3>获取当前用户信息</h3>
+                <div class="test-controls">
+                    <button class="btn btn-primary" onclick="testGetCurrentUser()">获取当前用户信息</button>
+                </div>
+            </div>
+            <div class="test-case">
+                <h3>创建新用户</h3>
+                <div class="form-group">
+                    <label for="new-username">新用户名:</label>
+                    <input type="text" id="new-username" value="testuser" placeholder="输入新用户名">
+                </div>
+                <div class="form-group">
+                    <label for="new-email">邮箱:</label>
+                    <input type="text" id="new-email" value="test@example.com" placeholder="输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="new-password">密码:</label>
+                    <input type="password" id="new-password" value="test123" placeholder="输入密码">
+                </div>
+                <div class="form-group">
+                    <label for="new-role">角色:</label>
+                    <select id="new-role">
+                        <option value="住户">住户</option>
+                        <option value="物业">物业</option>
+                        <option value="管理员">管理员</option>
+                    </select>
+                </div>
+                <div class="test-controls">
+                    <button class="btn btn-primary" onclick="testCreateUser()">创建用户</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试结果 -->
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <div class="test-controls">
+                <button class="btn btn-secondary" onclick="clearLogs()">清空日志</button>
+                <button class="btn btn-primary" onclick="runAllTests()">运行所有测试</button>
+            </div>
+            <div id="test-results" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // API基础配置
+        const API_BASE_URL = '/api';
+        let authToken = localStorage.getItem('access_token');
+        let currentUser = null;
+
+        // API请求封装函数
+        async function apiRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            // 添加认证token
+            if (authToken) {
+                defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            // 合并选项
+            const requestOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers,
+                },
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${url}`, requestOptions);
+                
+                if (!response.ok) {
+                    // 处理错误响应
+                    let errorData;
+                    try {
+                        errorData = await response.json().catch(() => ({}));
+                    } catch (e) {
+                        errorData = {};
+                    }
+                    
+                    logError(`API错误: ${response.status} ${response.statusText}`);
+                    if (errorData.detail) {
+                        logError(`错误详情: ${errorData.detail}`);
+                    }
+                    
+                    // 401错误处理
+                    if (response.status === 401) {
+                        authToken = null;
+                        currentUser = null;
+                        localStorage.removeItem('access_token');
+                        updateAuthStatus();
+                        logError('认证已过期，请重新登录');
+                    }
+                    
+                    throw new Error(`API请求失败: ${response.status}`);
+                }
+                
+                // 处理空响应（如204 No Content）
+                if (response.status === 204) {
+                    return {};
+                }
+                
+                return await response.json();
+            } catch (error) {
+                if (!error.message.includes('API请求失败')) {
+                    logError('请求失败: 无法连接到服务器');
+                }
+                throw error;
+            }
+        }
+        // 日志记录函数
+        function log(message, type = 'info') {
+            const resultDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            let cssClass = 'log-info';
+            
+            if (type === 'success') cssClass = 'log-success';
+            if (type === 'error') cssClass = 'log-error';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${cssClass}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            resultDiv.appendChild(logEntry);
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        function logSuccess(message) {
+            log(message, 'success');
+        }
+
+        function logError(message) {
+            log(message, 'error');
+        }
+
+        function logInfo(message) {
+            log(message, 'info');
+        }
+
+        // 显示JSON数据
+        function displayJson(data) {
+            const resultDiv = document.getElementById('test-results');
+            const jsonDiv = document.createElement('div');
+            jsonDiv.className = 'log-entry';
+            jsonDiv.textContent = JSON.stringify(data, null, 2);
+            resultDiv.appendChild(jsonDiv);
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        // 更新认证状态显示
+        function updateAuthStatus() {
+            const authStatus = document.getElementById('auth-status');
+            const userInfo = document.getElementById('user-info');
+            
+            if (authToken && currentUser) {
+                authStatus.className = 'status authenticated';
+                authStatus.textContent = '已登录';
+                userInfo.innerHTML = `用户名: ${currentUser.username}, 角色: ${currentUser.roles ? currentUser.roles.map(r => r.name).join(', ') : '无'}`;
+            } else {
+                authStatus.className = 'status unauthenticated';
+                authStatus.textContent = '未登录';
+                userInfo.innerHTML = '未登录';
+            }
+        }
+
+        // 测试登录
+        async function testLogin() {
+            logInfo('开始测试登录...');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                authToken = response.access_token;
+                currentUser = response.user;
+                localStorage.setItem('access_token', authToken);
+                
+                logSuccess(`登录成功! 欢迎 ${currentUser.username}`);
+                logInfo(`Token: ${authToken.substring(0, 20)}...`);
+                displayJson(response.data);
+                
+                updateAuthStatus();
+            } catch (error) {
+                logError('登录失败');
+            }
+        }
+
+        // 测试登出
+        async function testLogout() {
+            logInfo('开始测试登出...');
+            
+            try {
+                await apiRequest('/auth/logout', {
+                    method: 'POST'
+                });
+                logSuccess('登出成功');
+            } catch (error) {
+                // 即使失败也要清除本地状态
+                logError('登出API调用失败，但仍清除本地认证状态');
+            } finally {
+                // 清除本地认证信息
+                authToken = null;
+                currentUser = null;
+                localStorage.removeItem('access_token');
+                updateAuthStatus();
+            }
+        }
+
+        // 检查认证状态
+        function checkAuthStatus() {
+            logInfo('检查认证状态...');
+            
+            if (authToken) {
+                logInfo(`当前Token: ${authToken.substring(0, 20)}...`);
+                logInfo(`Token长度: ${authToken.length} 字符`);
+            } else {
+                logInfo('未找到认证Token');
+            }
+            
+            updateAuthStatus();
+        }
+
+        // 获取用户列表
+        async function testGetUsers() {
+            logInfo('获取用户列表...');
+            
+            if (!authToken) {
+                logError('未认证，请先登录');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest('/users/?page=1&page_size=10', {
+                    method: 'GET'
+                });
+                logSuccess(`成功获取用户列表，共 ${response.total} 个用户`);
+                displayJson(response);
+            } catch (error) {
+                logError('获取用户列表失败');
+            }
+        }
+
+        // 获取当前用户信息
+        async function testGetCurrentUser() {
+            logInfo('获取当前用户信息...');
+            
+            if (!authToken) {
+                logError('未认证，请先登录');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest('/users/me', {
+                    method: 'GET'
+                });
+                logSuccess('成功获取当前用户信息');
+                displayJson(response);
+                
+                // 更新当前用户信息
+                currentUser = response;
+                updateAuthStatus();
+            } catch (error) {
+                logError('获取当前用户信息失败');
+            }
+        }
+
+        // 创建新用户
+        async function testCreateUser() {
+            logInfo('创建新用户...');
+            
+            if (!authToken) {
+                logError('未认证，请先登录');
+                return;
+            }
+            
+            const username = document.getElementById('new-username').value + '_' + Date.now();
+            const email = document.getElementById('new-email').value;
+            const password = document.getElementById('new-password').value;
+            const role = document.getElementById('new-role').value;
+            
+            try {
+                const response = await apiRequest('/users', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        name: username,
+                        role_name: role
+                    })
+                });
+                
+                logSuccess(`成功创建用户: ${username}`);
+                displayJson(response);
+            } catch (error) {
+                logError('创建用户失败');
+            }
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            clearLogs();
+            logInfo('开始运行所有测试...');
+            
+            // 1. 尝试使用现有token检查认证
+            checkAuthStatus();
+            
+            // 2. 如果没有token，进行登录
+            if (!authToken) {
+                await testLogin();
+            }
+            
+            // 3. 获取当前用户信息
+            await testGetCurrentUser();
+            
+            // 4. 获取用户列表
+            await testGetUsers();
+            
+            // 5. 创建测试用户
+            await testCreateUser();
+            
+            logInfo('所有测试完成');
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            // 从localStorage恢复认证状态
+            if (localStorage.getItem('access_token')) {
+                authToken = localStorage.getItem('access_token');
+                // 尝试获取当前用户信息验证token是否有效
+                testGetCurrentUser();
+            } else {
+                updateAuthStatus();
+            }
+            
+            logInfo('测试页面已加载，准备就绪');
+        };
+    </script>
+</body>
+</html>
